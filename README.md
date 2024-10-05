@@ -105,4 +105,3 @@ For any questions or suggestions, please contact **Amr Khaled** via [GitHub](htt
 
 ---
 
-Simply save the above content in a file named `README.md` and include it in your project repository. This README will make it clear to users what your project does, how to use it, and any other important details they need to know.
