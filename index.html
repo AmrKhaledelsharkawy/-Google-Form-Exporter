@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Form Exporter</title>
+  <style>
+    /* CSS Variables for theming */
+    :root {
+      --primary-color: #6200ee;
+      --primary-color-dark: #3700b3;
+      --secondary-color: #03dac6;
+      --background-color: #f5f5f5;
+      --surface-color: #ffffff;
+      --error-color: #b00020;
+      --on-primary-color: #ffffff;
+      --on-surface-color: #000000;
+      --font-family: 'Roboto', sans-serif;
+    }
+
+    /* Reset and base styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--background-color);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    #container {
+      background: var(--surface-color);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 600px;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 30px;
+      font-size: 32px;
+      text-align: center;
+      position: relative;
+    }
+
+    h1::after {
+      content: '';
+      width: 60px;
+      height: 4px;
+      background: var(--primary-color);
+      display: block;
+      margin: 10px auto 0;
+      border-radius: 2px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--on-surface-color);
+      margin-bottom: 8px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(98, 0, 238, 0.2);
+      outline: none;
+    }
+
+    .error-message {
+      color: var(--error-color);
+      font-size: 14px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background-color: var(--primary-color);
+      color: var(--on-primary-color);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 500;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--primary-color-dark);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #loading {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    /* Progress Bar Styles */
+    #progressBar {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    #progressBarFill {
+      height: 20px;
+      width: 0%;
+      background-color: var(--primary-color);
+      transition: width 0.2s;
+    }
+
+    #progressPercent {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--primary-color-dark);
+    }
+
+    #output {
+      margin-top: 30px;
+      font-size: 18px;
+      color: #28a745;
+      text-align: center;
+    }
+
+    .error {
+      color: var(--error-color);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.7;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      #container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: var(--on-surface-color);
+      color: var(--surface-color);
+      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%; /* Position above the icon */
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .icon {
+      font-size: 20px;
+      color: var(--primary-color);
+      cursor: pointer;
+      margin-left: 5px;
+    }
+
+    /* Input validation */
+    .valid {
+      border-color: #28a745;
+    }
+
+    .invalid {
+      border-color: var(--error-color);
+    }
+  </style>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <!-- Google Platform Library for google.script.run -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  <script>
+    function $(selector) {
+      return document.querySelector(selector);
+    }
+
+    function $all(selector) {
+      return document.querySelectorAll(selector);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var formIdInput = $('#formId');
+      var spreadsheetNameInput = $('#spreadsheetName');
+      var answersInput = $('#answers');
+      var exportButton = $('#exportButton');
+      var progressBarFill = $('#progressBarFill');
+      var progressPercent = $('#progressPercent');
+      var loadingDiv = $('#loading');
+      var progressInterval;
+
+      // Real-time input validation
+      formIdInput.addEventListener('input', validateFormId);
+      spreadsheetNameInput.addEventListener('input', validateSpreadsheetName);
+      answersInput.addEventListener('input', validateAnswers);
+
+      function validateFormId() {
+        var value = formIdInput.value.trim();
+        if (value) {
+          formIdInput.classList.remove('invalid');
+          formIdInput.classList.add('valid');
+          hideError(formIdInput);
+        } else {
+          formIdInput.classList.remove('valid');
+          formIdInput.classList.add('invalid');
+          showError(formIdInput, 'Form ID is required.');
+        }
+      }
+
+      function validateSpreadsheetName() {
+        var value = spreadsheetNameInput.value.trim();
+        if (value) {
+          spreadsheetNameInput.classList.remove('invalid');
+          spreadsheetNameInput.classList.add('valid');
+          hideError(spreadsheetNameInput);
+        } else {
+          spreadsheetNameInput.classList.remove('valid');
+          spreadsheetNameInput.classList.add('invalid');
+          showError(spreadsheetNameInput, 'File Name is required.');
+        }
+      }
+
+      function validateAnswers() {
+        var value = answersInput.value.trim();
+        if (value) {
+          answersInput.classList.remove('invalid');
+          answersInput.classList.add('valid');
+          hideError(answersInput);
+        } else {
+          answersInput.classList.remove('valid');
+          answersInput.classList.add('invalid');
+          showError(answersInput, 'Correct Answers are required.');
+        }
+      }
+
+      function showError(element, message) {
+        var errorElement = element.parentNode.querySelector('.error-message');
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.style.display = 'block';
+        }
+      }
+
+      function hideError(element) {
+        var errorElement = element.parentNode.querySelector('.error-message');
+        if (errorElement) {
+          errorElement.style.display = 'none';
+        }
+      }
+
+      exportButton.addEventListener('click', exportQuestions);
+
+      function exportQuestions() {
+        // Clear previous output
+        $('#output').innerHTML = '';
+        // Get the values from input fields
+        var formId = formIdInput.value.trim();
+        var answerText = answersInput.value.trim();
+        var spreadsheetName = spreadsheetNameInput.value.trim();
+
+        // Validate inputs
+        var valid = true;
+        if (!formId) {
+          showError(formIdInput, 'Form ID is required.');
+          formIdInput.classList.add('invalid');
+          valid = false;
+        }
+        if (!spreadsheetName) {
+          showError(spreadsheetNameInput, 'File Name is required.');
+          spreadsheetNameInput.classList.add('invalid');
+          valid = false;
+        }
+        if (!answerText) {
+          showError(answersInput, 'Correct Answers are required.');
+          answersInput.classList.add('invalid');
+          valid = false;
+        }
+
+        if (!valid) {
+          return;
+        }
+
+        // Parse the correct answers into an array
+        var answerLines = answerText.split('\n');
+        var answers = [];
+        for (var i = 0; i < answerLines.length; i++) {
+          var line = answerLines[i].trim();
+          var match = line.match(/^\d+\.\s*([A-E])$/i);
+          if (match) {
+            answers.push(match[1].toUpperCase());
+          } else {
+            showError(answersInput, "Invalid answer format at line " + (i + 1) + ". Please follow the format '1. A'.");
+            answersInput.classList.add('invalid');
+            return;
+          }
+        }
+
+        // Show loading indicator and reset progress bar
+        loadingDiv.style.display = 'block';
+        progressBarFill.style.width = '0%';
+        progressPercent.textContent = '0%';
+        exportButton.disabled = true;
+
+        // Simulate progress bar
+        var progress = 0;
+        progressInterval = setInterval(function() {
+          if (progress < 90) { // Simulate up to 90% progress
+            progress += Math.floor(Math.random() * 10) + 5; // Increment by random value between 5 and 15
+            if (progress > 90) progress = 90;
+            progressBarFill.style.width = progress + '%';
+            progressPercent.textContent = progress + '%';
+          }
+        }, 500);
+
+        // Call the server-side function
+        google.script.run
+          .withSuccessHandler(function(csvContent) {
+            clearInterval(progressInterval);
+            progressBarFill.style.width = '100%';
+            progressPercent.textContent = '100%';
+
+            setTimeout(function() {
+              // Hide loading indicator
+              loadingDiv.style.display = 'none';
+              exportButton.disabled = false;
+              progressBarFill.style.width = '0%';
+              progressPercent.textContent = '0%';
+
+              // Trigger download of the CSV file
+              var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              var link = document.createElement("a");
+              if (navigator.msSaveBlob) { // For IE 10+
+                navigator.msSaveBlob(blob, spreadsheetName + '.csv');
+              } else {
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", spreadsheetName + '.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }
+
+              showSuccess("Questions exported successfully!");
+            }, 500); // Wait for progress bar to reach 100%
+          })
+          .withFailureHandler(function(error) {
+            clearInterval(progressInterval);
+            progressBarFill.style.width = '0%';
+            progressPercent.textContent = '0%';
+            // Hide loading indicator
+            loadingDiv.style.display = 'none';
+            exportButton.disabled = false;
+
+            showError(formIdInput, error.message);
+          })
+          .exportFormToCSV(formId, answers);
+      }
+
+      function showSuccess(message) {
+        var output = $('#output');
+        output.innerHTML = message;
+        output.classList.remove('error');
+        output.classList.add('success');
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="container">
+    <h1>Google Form Exporter</h1>
+
+    <div class="input-group">
+      <label for="formId">Form ID<span class="tooltip"><i class="fas fa-info-circle icon"></i><span class="tooltiptext">The ID of the Google Form you wish to export.</span></span>:</label>
+      <input type="text" id="formId" placeholder="Enter Google Form ID">
+      <div class="error-message">Error message here</div>
+    </div>
+
+    <div class="input-group">
+      <label for="spreadsheetName">File Name<span class="tooltip"><i class="fas fa-info-circle icon"></i><span class="tooltiptext">The desired name of the exported file.</span></span>:</label>
+      <input type="text" id="spreadsheetName" placeholder="Enter File Name">
+      <div class="error-message">Error message here</div>
+    </div>
+
+    <div class="input-group">
+      <label for="answers">Correct Answers<span class="tooltip"><i class="fas fa-info-circle icon"></i><span class="tooltiptext">Enter the correct answers in the format '1. A'</span></span>:</label>
+      <textarea id="answers" placeholder="Format: 1. A\n2. B\n3. C" rows="6"></textarea>
+      <div class="error-message">Error message here</div>
+    </div>
+
+    <button id="exportButton">Export Questions</button>
+
+    <div id="loading">
+      <div id="progressBar">
+        <div id="progressBarFill"></div>
+      </div>
+      <span id="progressPercent">0%</span>
+      <div>Processing... Please wait...</div>
+    </div>
+    <div id="output"></div>
+  </div>
+</body>
+</html>
